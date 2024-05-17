@@ -31,7 +31,7 @@ import { request, gql } from "graphql-request";
 import { convertTokenStrFromDecimal } from "../util/BNUtils";
 
 export class MainnetDataDownloader {
-  private RPCProvider: providers.JsonRpcProvider;
+  private RPCProvider: providers.IpcProvider;
 
   private eventDataSourceType: EventDataSourceType;
 
