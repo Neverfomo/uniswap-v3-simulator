@@ -25,7 +25,10 @@
     "clean": "hardhat clean",
     "compile": "hardhat compile && yarn generate-types",
     "script": "yarn ts-node",
-    "testcontracts": "hardhat test"
+    "testcontracts": "hardhat test",
+    "download": "tsc && node dist/download.js",
+    "play": "tsc && node dist/play.js",
+    "testconn": "tsc && node dist/testconn.js"
   },
   "license": "BUSL-1.1",
   "devDependencies": {
@@ -58,7 +61,7 @@
   "dependencies": {
     "bignumber.js": "^9.0.2",
     "dayjs": "^1.10.6",
-    "ethers": "^5.0.0",
+    "ethers": "^5.5.1",
     "graphql": "^16.2.0",
     "graphql-request": "^3.7.0",
     "jsbi": "3.1.6",

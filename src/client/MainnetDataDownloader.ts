@@ -377,6 +377,7 @@ export class MainnetDataDownloader {
     while (fromBlock <= toBlock) {
       let endBlock =
         fromBlock + batchSize > toBlock ? toBlock : fromBlock + batchSize;
+      console.log(`Fetching from block ${fromBlock} to block ${endBlock}`)
       let latestEventBlockNumber = Math.max(
         await this.saveEventsFromSubgraph(
           poolAddress,
@@ -468,6 +469,16 @@ export class MainnetDataDownloader {
     let toTimestamp = (await this.RPCProvider.getBlock(toBlock)).timestamp;
     let latestEventBlockNumber = fromBlock;
     let skip = 0;
+    let eventTypeStr = ''
+    if (eventType == EventType.MINT) {
+      eventTypeStr = 'MINT'
+    } else if (eventType == EventType.BURN) {
+      eventTypeStr = 'BURN'
+    } else if (eventType == EventType.SWAP) {
+      eventTypeStr = 'SWAP'
+    } else {
+      eventTypeStr = 'UNKNOWN'
+    }
     while (true) {
       if (eventType === EventType.MINT) {
         const query = gql`
@@ -498,7 +509,7 @@ export class MainnetDataDownloader {
       `;
 
         let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
-
+        console.log(`Query ${eventTypeStr} items ${skip + 1000}`)
         let events = data.pool.mints;
 
         for (let event of events) {
@@ -558,7 +569,7 @@ export class MainnetDataDownloader {
       `;
 
         let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
-
+        console.log(`Query ${eventTypeStr} items ${skip + 1000}`)
         let events = data.pool.burns;
 
         for (let event of events) {
@@ -618,7 +629,7 @@ export class MainnetDataDownloader {
         `;
 
         let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
-
+        console.log(`Query ${eventTypeStr} items ${skip + 1000}`)
         let events = data.pool.swaps;
         for (let event of events) {
           let date = new Date(event.timestamp * 1000);

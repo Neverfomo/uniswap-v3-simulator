@@ -147,3 +147,6 @@ mochawesome-report/
 artifacts/
 cache/
 typechain/
+
+**.db
+**.db.bak
