@@ -43,7 +43,8 @@ export class MainnetDataDownloader {
       let tunerConfig = loadConfig(undefined);
       RPCProviderUrl = tunerConfig.RPCProviderUrl;
     }
-    this.RPCProvider = new providers.JsonRpcProvider(RPCProviderUrl);
+    // this.RPCProvider = new providers.JsonRpcProvider(RPCProviderUrl);
+    this.RPCProvider = new providers.IpcProvider('/tmp/reth.ipc')
     this.eventDataSourceType = eventDataSourceType;
   }
 
