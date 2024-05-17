@@ -28,7 +28,8 @@
     "testcontracts": "hardhat test",
     "download": "tsc && node dist/download.js",
     "play": "tsc && node dist/play.js",
-    "testconn": "tsc && node dist/testconn.js"
+    "testconn": "tsc && node dist/testconn.js",
+    "testc": "tsc && node dist/testc.js"
   },
   "license": "BUSL-1.1",
   "devDependencies": {
