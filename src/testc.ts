@@ -1,10 +1,11 @@
 import { ethers } from 'ethers';
 
 // 定义IPC文件路径
-const IPC_PATH = '/tmp/reth.ipc';
+// const IPC_PATH = '/tmp/reth.ipc';
 
 // 创建一个IPC提供者
-const provider = new ethers.providers.IpcProvider(IPC_PATH);
+// const provider = new ethers.providers.IpcProvider(IPC_PATH);
+const provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1")
 
 // 测试连接
 async function main() {
