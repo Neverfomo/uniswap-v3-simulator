@@ -3,6 +3,9 @@ import * as fs from "fs";
 
 export interface TunerConfig {
   RPCProviderUrl: string;
+  PrivateRPCProviderUrl: string;
+  IPCProviderUrl: string;
+  providerToBeUsed: string;
 }
 
 export function loadConfig(file?: string): TunerConfig {

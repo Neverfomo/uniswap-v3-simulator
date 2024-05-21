@@ -1,6 +1,6 @@
 import { EventType } from "../enum/EventType";
 import { EventDBManager } from "../manager/EventDBManager";
-import { providers } from "ethers";
+import { ethers, providers } from "ethers";
 import { UniswapV3Pool2__factory as UniswapV3PoolFactory } from "../typechain/factories/UniswapV3Pool2__factory";
 import { UniswapV3Pool2 as UniswapV3Pool } from "../typechain/UniswapV3Pool2";
 import {
@@ -31,20 +31,39 @@ import { request, gql } from "graphql-request";
 import { convertTokenStrFromDecimal } from "../util/BNUtils";
 
 export class MainnetDataDownloader {
-  private RPCProvider: providers.IpcProvider;
+  // @ts-ignore
+  private IPCProvider: providers.IpcProvider;
+  // @ts-ignore
+  private RPCProvider: providers.JsonRpcProvider;
+  // @ts-ignore
+  private privateRPCProvider: providers.JsonRpcProvider;
 
   private eventDataSourceType: EventDataSourceType;
+
+  private providerForFetchingEvents: providers.JsonRpcProvider;
 
   constructor(
     RPCProviderUrl: string | undefined,
     eventDataSourceType: EventDataSourceType
   ) {
+    let tunerConfig = loadConfig(undefined);
     if (RPCProviderUrl == undefined) {
-      let tunerConfig = loadConfig(undefined);
       RPCProviderUrl = tunerConfig.RPCProviderUrl;
     }
-    // this.RPCProvider = new providers.JsonRpcProvider(RPCProviderUrl);
-    this.RPCProvider = new providers.IpcProvider('/tmp/reth.ipc')
+    let privateRPCProviderUrl = tunerConfig.PrivateRPCProviderUrl;
+    
+    let providerType = tunerConfig.providerToBeUsed;
+    if (providerType == 'privateRpc') {
+      this.privateRPCProvider = new providers.JsonRpcProvider(privateRPCProviderUrl);
+      this.providerForFetchingEvents = this.privateRPCProvider;
+    } else if (providerType == 'privateIpc') {
+      this.IPCProvider = new providers.IpcProvider(tunerConfig.IPCProviderUrl)
+      this.providerForFetchingEvents = this.IPCProvider;
+    } else {
+      this.RPCProvider = new providers.JsonRpcProvider(RPCProviderUrl);
+      this.providerForFetchingEvents = this.RPCProvider;
+    }
+    
     this.eventDataSourceType = eventDataSourceType;
   }
 
@@ -135,6 +154,8 @@ export class MainnetDataDownloader {
       throw new Error(
         `The pool does not exist at block height: ${toBlockAsNumber}, it was deployed at block height: ${deploymentBlockNumber}`
       );
+    
+    console.log(`toBlockAsNumber ${toBlockAsNumber}, deploymentBlockNumber ${deploymentBlockNumber}`)
 
     let initializeTopic = uniswapV3Pool.filters.Initialize();
     let initializationEvent = await uniswapV3Pool.queryFilter(initializeTopic);
@@ -173,6 +194,8 @@ export class MainnetDataDownloader {
 
       if (toBlock === "afterInitialization") return;
 
+      let uniswapV3PoolForFetchingEvents = await this.getCorePoolContarctByProvider(poolAddress, this.providerForFetchingEvents);
+
       // download events after initialization
       if (this.eventDataSourceType === EventDataSourceType.SUBGRAPH) {
         await this.downloadEventsFromSubgraph(
@@ -186,7 +209,7 @@ export class MainnetDataDownloader {
         );
       } else if (this.eventDataSourceType === EventDataSourceType.RPC) {
         await this.downloadEventsFromRPC(
-          uniswapV3Pool,
+          uniswapV3PoolForFetchingEvents,
           eventDB,
           initializationEventBlockNumber,
           toBlockAsNumber,
@@ -675,6 +698,7 @@ export class MainnetDataDownloader {
     let latestEventBlockNumber = fromBlock;
     if (eventType === EventType.MINT) {
       let topic = uniswapV3Pool.filters.Mint();
+      console.log(`fetching MINT from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
         let block = await this.RPCProvider.getBlock(event.blockNumber);
@@ -698,6 +722,7 @@ export class MainnetDataDownloader {
       }
     } else if (eventType === EventType.BURN) {
       let topic = uniswapV3Pool.filters.Burn();
+      console.log(`fetching BURN from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
         let block = await this.RPCProvider.getBlock(event.blockNumber);
@@ -721,6 +746,7 @@ export class MainnetDataDownloader {
       }
     } else if (eventType === EventType.SWAP) {
       let topic = uniswapV3Pool.filters.Swap();
+      console.log(`fetching SWAP from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
         let block = await this.RPCProvider.getBlock(event.blockNumber);
@@ -775,6 +801,13 @@ export class MainnetDataDownloader {
     poolAddress: string
   ): Promise<UniswapV3Pool> {
     return UniswapV3PoolFactory.connect(poolAddress, this.RPCProvider);
+  }
+
+  private async getCorePoolContarctByProvider(
+    poolAddress: string,
+    provider: ethers.providers.JsonRpcProvider
+  ): Promise<UniswapV3Pool> {
+    return UniswapV3PoolFactory.connect(poolAddress, provider);
   }
 
   private async getAndSortEventByBlock(

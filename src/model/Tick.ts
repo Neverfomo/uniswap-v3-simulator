@@ -14,31 +14,31 @@ import { TickView } from "../interface/TickView";
 })
 export class Tick {
   @jsonMember(Number, { name: "tickIndex" })
-  protected _tickIndex: number = 0;
+   _tickIndex: number = 0;
   @jsonMember({
     name: "liquidityGross",
     deserializer: JSBIDeserializer,
     serializer: JSBISerializer,
   })
-  protected _liquidityGross: JSBI = ZERO;
+   _liquidityGross: JSBI = ZERO;
   @jsonMember({
     name: "liquidityNet",
     deserializer: JSBIDeserializer,
     serializer: JSBISerializer,
   })
-  protected _liquidityNet: JSBI = ZERO;
+   _liquidityNet: JSBI = ZERO;
   @jsonMember({
     name: "feeGrowthOutside0X128",
     deserializer: JSBIDeserializer,
     serializer: JSBISerializer,
   })
-  protected _feeGrowthOutside0X128: JSBI = ZERO;
+   _feeGrowthOutside0X128: JSBI = ZERO;
   @jsonMember({
     name: "feeGrowthOutside1X128",
     deserializer: JSBIDeserializer,
     serializer: JSBISerializer,
   })
-  protected _feeGrowthOutside1X128: JSBI = ZERO;
+   _feeGrowthOutside1X128: JSBI = ZERO;
 
   constructor(tickIndex: number) {
     assert(
