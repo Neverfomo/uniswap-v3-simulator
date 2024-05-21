@@ -151,3 +151,4 @@ typechain/
 **.db
 **.db.bak
 **.bak
+**.db-journal

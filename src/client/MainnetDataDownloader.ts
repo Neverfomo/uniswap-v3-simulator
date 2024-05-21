@@ -51,8 +51,9 @@ export class MainnetDataDownloader {
       RPCProviderUrl = tunerConfig.RPCProviderUrl;
     }
     let privateRPCProviderUrl = tunerConfig.PrivateRPCProviderUrl;
-    
+    this.RPCProvider = new providers.JsonRpcProvider(RPCProviderUrl);
     let providerType = tunerConfig.providerToBeUsed;
+    console.log(`Using ${providerType} provider to fetch events.`)
     if (providerType == 'privateRpc') {
       this.privateRPCProvider = new providers.JsonRpcProvider(privateRPCProviderUrl);
       this.providerForFetchingEvents = this.privateRPCProvider;
@@ -60,7 +61,6 @@ export class MainnetDataDownloader {
       this.IPCProvider = new providers.IpcProvider(tunerConfig.IPCProviderUrl)
       this.providerForFetchingEvents = this.IPCProvider;
     } else {
-      this.RPCProvider = new providers.JsonRpcProvider(RPCProviderUrl);
       this.providerForFetchingEvents = this.RPCProvider;
     }
     
@@ -449,6 +449,7 @@ export class MainnetDataDownloader {
     while (fromBlock <= toBlock) {
       let endBlock =
         fromBlock + batchSize > toBlock ? toBlock : fromBlock + batchSize;
+      console.time(`Fetch events from ${fromBlock} to ${endBlock}`)
       let latestEventBlockNumber = Math.max(
         await this.saveEventsFromRPC(
           uniswapV3Pool,
@@ -473,6 +474,7 @@ export class MainnetDataDownloader {
         )
       );
       await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber);
+      console.timeEnd(`Fetch events from ${fromBlock} to ${endBlock}`)
       fromBlock += batchSize + 1;
     }
     console.log(

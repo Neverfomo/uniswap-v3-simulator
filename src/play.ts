@@ -45,10 +45,11 @@ async function main() {
     
 
     // let dataPathSubgraph = '/home/ubuntu/lvr/uniswap-v3-simulator/WETH-USDC-SUBGRAPH_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640.db'
-    let dataPathRpc = '/home/ubuntu/lvr/uniswap-v3-simulator/WETH-USDC-RPC-TMP_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640.db'
+    // let dataPathRpc = '/home/ubuntu/lvr/uniswap-v3-simulator/WETH-USDC-SUBGRAPH-FULL_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640.db'
+    let dataPath = '/home/ubuntu/lvr/uniswap-v3-simulator/WETH-USDC-SUBGRAPH-TMP_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640.db'
 
 
-    let configurableCorePool = await clientInstance.recoverFromMainnetEventDBFile(dataPathRpc, 12595410)
+    let configurableCorePool = await clientInstance.recoverFromMainnetEventDBFile(dataPath, 12595411)
 
     let sqrtPriceX96 = configurableCorePool.getCorePool().sqrtPriceX96
     console.log(sqrtPriceX96.toString())
