@@ -10,13 +10,8 @@ const provider = new ethers.providers.IpcProvider(IPC_PATH);
 async function main() {
     let cnt = 0
     while (cnt < 10) {
-        provider.getBlockNumber()
-        .then((blockNumber) => {
-            console.log(`Current block number: ${blockNumber}`);
-        })
-        .catch((error) => {
-            console.error(`Error connecting to IPC: ${error}`);
-        });
+        let blockNumber = await provider.getBlockNumber()
+        console.log(blockNumber)
         cnt += 1
     }
 }
