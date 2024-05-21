@@ -23,6 +23,7 @@ async function getTicks(chunkStart: number, chunkEnd: number, poolAddress: strin
       logFile.write(`Tick ${tickIndex} processed.\n`);
     } catch (error) {
       // 忽略未初始化的 tick
+        // @ts-ignore
       logFile.write(`Error processing tick ${tickIndex}: ${error.message}\n`);
     }
   }
