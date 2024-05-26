@@ -20,7 +20,7 @@ async function getTicks(chunkStart: number, chunkEnd: number, poolAddress: strin
       tick._feeGrowthOutside0X128 = JSBI.BigInt(data.feeGrowthOutside0X128.toString());
       tick._feeGrowthOutside1X128 = JSBI.BigInt(data.feeGrowthOutside1X128.toString());
       ticks.push(tick);
-      logFile.write(`Tick ${tickIndex} processed.\n`);
+      logFile.write(`${JSON.stringify(tick)}\n`);
     } catch (error) {
       // 忽略未初始化的 tick
         // @ts-ignore
