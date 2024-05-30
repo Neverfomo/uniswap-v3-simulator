@@ -77,8 +77,9 @@ function saveTicksToJson(ticks: Tick[], filename: string) {
 }
 
 // 示例调用
-const blockNumber = 19904930; // 替换为你想查询的块高度
-const outputFilename = "ticks.json";
+const blockNumber = 19954456; // 替换为你想查询的块高度
+//19955220
+const outputFilename = `ticks_${blockNumber}.json`;
 
 getAllInitializedTicks(blockNumber).then(ticks => {
   saveTicksToJson(ticks, outputFilename);

@@ -29,6 +29,9 @@ import {
 import { loadConfig } from "../config/TunerConfig";
 import { request, gql } from "graphql-request";
 import { convertTokenStrFromDecimal } from "../util/BNUtils";
+import { LiquidityEventData, SwapEventData } from "../entity/EventData";
+import fs from 'fs';
+
 
 export class MainnetDataDownloader {
   // @ts-ignore
@@ -699,10 +702,12 @@ export class MainnetDataDownloader {
   ): Promise<number> {
     let latestEventBlockNumber = fromBlock;
     if (eventType === EventType.MINT) {
+      console.log("MINT")
       let topic = uniswapV3Pool.filters.Mint();
       console.log(`fetching MINT from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
+        console.log(JSON.stringify(event))
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertLiquidityEvent(
@@ -723,10 +728,12 @@ export class MainnetDataDownloader {
           latestEventBlockNumber = event.blockNumber;
       }
     } else if (eventType === EventType.BURN) {
+      console.log("BURN")
       let topic = uniswapV3Pool.filters.Burn();
       console.log(`fetching BURN from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
+        console.log(JSON.stringify(event))
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertLiquidityEvent(
@@ -747,10 +754,12 @@ export class MainnetDataDownloader {
           latestEventBlockNumber = event.blockNumber;
       }
     } else if (eventType === EventType.SWAP) {
+      console.log("SWAP")
       let topic = uniswapV3Pool.filters.Swap();
       console.log(`fetching SWAP from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
+        console.log(JSON.stringify(event))
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertSwapEvent(
@@ -771,6 +780,90 @@ export class MainnetDataDownloader {
       }
     }
     return latestEventBlockNumber;
+  }
+
+  async fetchEventsDataFromRPC(
+    poolAddress: string,
+    eventType: EventType,
+    fromBlock: number,
+    toBlock: number
+  ): Promise<any> {
+    let eventsData: any[] = []
+    let uniswapV3Pool = await this.getCorePoolContarctByProvider(poolAddress, this.providerForFetchingEvents);
+    if (eventType === EventType.MINT) {
+      let topic = uniswapV3Pool.filters.Mint();
+      console.log(`fetching MINT from ${fromBlock} to ${toBlock}`)
+      let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
+      for (let event of events) {
+        console.log(JSON.stringify(event))
+        let block = await this.RPCProvider.getBlock(event.blockNumber);
+        let date = new Date(block.timestamp * 1000);
+        let data: LiquidityEventData = {
+          type: eventType,
+          msg_sender: event.args.sender,
+          recipient: event.args.owner,
+          liquidity: event.args.amount.toString(),
+          amount0: event.args.amount0.toString(),
+          amount1: event.args.amount1.toString(),
+          tick_lower: event.args.tickLower,
+          tick_upper: event.args.tickUpper,
+          block_number: event.blockNumber,
+          transaction_index: event.transactionIndex,
+          log_index: event.logIndex,
+          date: date
+        }
+        eventsData.push(data)
+      }
+    } else if (eventType === EventType.BURN) {
+      let topic = uniswapV3Pool.filters.Burn();
+      console.log(`fetching BURN from ${fromBlock} to ${toBlock}`)
+      let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
+      for (let event of events) {
+        console.log(JSON.stringify(event))
+        let block = await this.RPCProvider.getBlock(event.blockNumber);
+        let date = new Date(block.timestamp * 1000);
+        let data = {
+          type: eventType,
+          msg_sender: event.args.owner,
+          recipient: "",
+          liquidity: event.args.amount.toString(),
+          amount0: event.args.amount0.toString(),
+          amount1: event.args.amount1.toString(),
+          tick_lower: event.args.tickLower,
+          tick_upper: event.args.tickUpper,
+          block_number: event.blockNumber,
+          transaction_index: event.transactionIndex,
+          log_index: event.logIndex,
+          date: date
+        }
+        eventsData.push(data)
+      }
+    } else if (eventType === EventType.SWAP) {
+      console.log("SWAP")
+      let topic = uniswapV3Pool.filters.Swap();
+      console.log(`fetching SWAP from ${fromBlock} to ${toBlock}`)
+      let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
+      for (let event of events) {
+        console.log(JSON.stringify(event))
+        let block = await this.RPCProvider.getBlock(event.blockNumber);
+        let date = new Date(block.timestamp * 1000);
+        let data: SwapEventData = {
+          msg_sender: event.args.sender,
+          recipient: event.args.recipient,
+          amount0: event.args.amount0.toString(),
+          amount1: event.args.amount1.toString(),
+          sqrt_price_x96: event.args.sqrtPriceX96.toString(),
+          liquidity: event.args.liquidity.toString(),
+          tick:event.args.tick,
+          block_number: event.blockNumber,
+          transaction_index: event.transactionIndex,
+          log_index: event.logIndex,
+          date: date
+        }
+        eventsData.push(data)
+      }
+    }
+    return eventsData;
   }
 
   private async preProcessSwapEvent(eventDB: EventDBManager) {
@@ -926,6 +1019,80 @@ export class MainnetDataDownloader {
           // @ts-ignore: ExhaustiveCheck
           const exhaustiveCheck: never = param;
       }
+    }
+  }
+
+  async importEventsFromFiles(eventFiles: string[], dbFilePath: string, poolAddress: string) {
+    if (fs.existsSync(dbFilePath)) {
+      throw new Error(`The database file: ${dbFilePath} already exists. Please choose a different file path or delete the existing file.`);
+    }
+
+    const eventDB = await EventDBManager.buildInstance(dbFilePath);
+    let latestEventBlockNumber = 0
+    let uniswapV3Pool = await this.getCorePoolContarct(poolAddress);
+    let initializeTopic = uniswapV3Pool.filters.Initialize();
+    let initializationEvent = await uniswapV3Pool.queryFilter(initializeTopic);
+    let initializationSqrtPriceX96 = initializationEvent[0].args.sqrtPriceX96;
+    let initializationEventBlockNumber = initializationEvent[0].blockNumber;
+    try {
+      // query and record poolConfig
+      let poolConfig = new PoolConfig(
+        await uniswapV3Pool.tickSpacing(),
+        await uniswapV3Pool.token0(),
+        await uniswapV3Pool.token1(),
+        await uniswapV3Pool.fee()
+      );
+      await eventDB.addPoolConfig(poolConfig);
+      // record initialize event
+      await eventDB.addInitialSqrtPriceX96(
+        initializationSqrtPriceX96.toString()
+      );
+      await eventDB.saveInitializationEventBlockNumber(
+        initializationEventBlockNumber
+      );
+      for (const file of eventFiles) {
+        const rawData = fs.readFileSync(file, 'utf-8');
+        const events = JSON.parse(rawData);
+
+        for (const event of events) {
+          latestEventBlockNumber = event.block_number > latestEventBlockNumber ? event.block_number : latestEventBlockNumber
+          if (event.eventType === 'MINT' || event.eventType === 'BURN') {
+            await eventDB.insertLiquidityEvent(
+              event.eventType,
+              event.msg_sender,
+              event.recipient,
+              event.liquidity,
+              event.amount0,
+              event.amount1,
+              event.tick_lower,
+              event.tick_upper,
+              event.block_number,
+              event.transaction_index,
+              event.log_index,
+              new Date(event.date)
+            );
+          } else if (event.eventType === 'SWAP') {
+            await eventDB.insertSwapEvent(
+              event.msg_sender,
+              event.recipient,
+              event.amount0,
+              event.amount1,
+              event.sqrt_price_x96,
+              event.liquidity,
+              event.tick,
+              event.block_number,
+              event.transaction_index,
+              event.log_index,
+              new Date(event.date)
+            );
+          }
+        }
+      }
+      await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber)
+      await this.preProcessSwapEvent(eventDB);
+      console.log("Events have been imported successfully.");
+    } finally {
+      await eventDB.close();
     }
   }
 }

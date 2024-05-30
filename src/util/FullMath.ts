@@ -11,6 +11,9 @@ export abstract class FullMath {
   }
 
   static mulDivRoundingUp(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
+    // console.log(`a: ${JSON.stringify(a)}`)
+    // console.log(`b: ${JSON.stringify(b)}`)
+    // console.log(`denominator: ${JSON.stringify(denominator)}`)
     const product = JSBI.multiply(a, b);
     let result = JSBI.divide(product, denominator);
     if (JSBI.greaterThan(JSBI.remainder(product, denominator), ZERO)) {

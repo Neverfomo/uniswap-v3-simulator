@@ -56,7 +56,7 @@ export abstract class TickMath {
       "TICK"
     );
     const absTick: number = tick < 0 ? tick * -1 : tick;
-
+    // console.log(`\ngetSqrtRatioAtTick tick ${tick}`)
     let ratio: JSBI =
       (absTick & 0x1) != 0
         ? JSBI.BigInt("0xfffcb933bd6fad37aa2d162d1a594001")

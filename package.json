@@ -32,7 +32,8 @@
     "testc": "tsc && node dist/testc.js",
     "poolinfo": "tsc && node dist/poolinfo.js",
     "main": "tsc && node dist/main.js",
-    "update": "tsc && node dist/update.js"
+    "update": "tsc && node dist/update.js",
+    "getticks": "tsc && node dist/ticks.js"
   },
   "license": "BUSL-1.1",
   "devDependencies": {
@@ -73,7 +74,10 @@
     "reflect-metadata": "^0.1.13",
     "sqlite3": "^5.0.2",
     "typedjson": "^1.7.0",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "@uniswap/sdk-core": "^3.1.0",
+    "@uniswap/v3-core": "^1.0.1",
+    "@uniswap/v3-sdk": "^3.9.0"
   },
   "resolutions": {
     "tar": "^4.4.18"
