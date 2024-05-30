@@ -33,7 +33,8 @@
     "poolinfo": "tsc && node dist/poolinfo.js",
     "main": "tsc && node dist/main.js",
     "update": "tsc && node dist/update.js",
-    "getticks": "tsc && node dist/ticks.js"
+    "getticks": "tsc && node dist/ticks.js",
+    "fetchevents": "tsc && node dist/fetch-event-main.js"
   },
   "license": "BUSL-1.1",
   "devDependencies": {
