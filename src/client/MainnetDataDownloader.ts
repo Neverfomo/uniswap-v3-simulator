@@ -705,7 +705,6 @@ export class MainnetDataDownloader {
   ): Promise<number> {
     let latestEventBlockNumber = fromBlock;
     if (eventType === EventType.MINT) {
-      console.log("MINT")
       let topic = uniswapV3Pool.filters.Mint();
       console.log(`fetching MINT from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
@@ -730,7 +729,6 @@ export class MainnetDataDownloader {
           latestEventBlockNumber = event.blockNumber;
       }
     } else if (eventType === EventType.BURN) {
-      console.log("BURN")
       let topic = uniswapV3Pool.filters.Burn();
       console.log(`fetching BURN from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
@@ -755,7 +753,6 @@ export class MainnetDataDownloader {
           latestEventBlockNumber = event.blockNumber;
       }
     } else if (eventType === EventType.SWAP) {
-      console.log("SWAP")
       let topic = uniswapV3Pool.filters.Swap();
       console.log(`fetching SWAP from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
