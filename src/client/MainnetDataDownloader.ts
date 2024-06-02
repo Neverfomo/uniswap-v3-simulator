@@ -375,6 +375,8 @@ export class MainnetDataDownloader {
         this.nextBatch(currBlock) > endBlock
           ? endBlock
           : this.nextBatch(currBlock);
+      // console.log(`Replay events from ${currBlock} to ${nextEndBlock}`)
+      console.time(`Replay events from ${currBlock} to ${nextEndBlock}`)
       let events = await this.getAndSortEventByBlock(
         eventDB,
         currBlock,
@@ -387,6 +389,7 @@ export class MainnetDataDownloader {
           events
         );
       }
+      console.timeEnd(`Replay events from ${currBlock} to ${nextEndBlock}`)
       currBlock = nextEndBlock + 1;
     }
     return configurableCorePool;
@@ -707,7 +710,6 @@ export class MainnetDataDownloader {
       console.log(`fetching MINT from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
-        console.log(JSON.stringify(event))
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertLiquidityEvent(
@@ -733,7 +735,6 @@ export class MainnetDataDownloader {
       console.log(`fetching BURN from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
-        console.log(JSON.stringify(event))
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertLiquidityEvent(
@@ -759,7 +760,6 @@ export class MainnetDataDownloader {
       console.log(`fetching SWAP from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
-        console.log(JSON.stringify(event))
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertSwapEvent(

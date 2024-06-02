@@ -8,7 +8,7 @@ import now from 'performance-now';
 const poolAddress = '0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640';
 const endBlock = 19980326; // Replace with actual end block
 const batchSize = 1000; // Replace with the desired batch size
-const numWorkers = 80;
+const numWorkers = 10;
 
 if (!fs.existsSync('./logs/events')) {
   fs.mkdirSync('./logs/events', { recursive: true });
