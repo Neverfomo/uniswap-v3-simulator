@@ -28,12 +28,22 @@ function formatDuration(duration: number): string {
     let allEvents = [];
 
     for (const eventType of eventTypes) {
-      const eventsData = await downloader.fetchEventsDataFromRPC(
-        workerData.poolAddress,
-        eventType,
-        workerData.fromBlock,
-        workerData.toBlock
-      );
+      let eventsData: any
+      let cont = true
+      while (cont) {
+        try {
+          eventsData = await downloader.fetchEventsDataFromRPC(
+            workerData.poolAddress,
+            eventType,
+            workerData.fromBlock,
+            workerData.toBlock
+          );
+          cont = false
+        } catch (error) {
+          // @ts-ignore
+          parentPort?.postMessage({ status: 'error', error: error.message, fromBlock: workerData.fromBlock, toBlock: workerData.toBlock });
+        }
+      }
 
       allEvents.push(...eventsData); // Spread operator to merge arrays
       let eventTypeStr = ""
