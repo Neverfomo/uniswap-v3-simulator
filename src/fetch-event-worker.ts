@@ -58,6 +58,9 @@ function formatDuration(duration: number): string {
       // Save each event type to a separate file
       const filePath = `./events/${eventTypeStr}/events_${workerData.fromBlock}_${workerData.toBlock}_${eventTypeStr}.json`;
       fs.appendFileSync(filePath, JSON.stringify(eventsData, null, 2));
+
+      const progressLogPath = `./logs/events/${eventTypeStr}_progress.log`
+      fs.appendFileSync(progressLogPath, `${workerData.fromBlock}\n`);
     }
 
     const logData = {
@@ -68,6 +71,8 @@ function formatDuration(duration: number): string {
 
     const logFilePath = `./logs/events/worker_${workerData.workerIndex}.log`;
     fs.appendFileSync(logFilePath, JSON.stringify(logData, null, 2) + '\n');
+
+    
 
     const end = now();
     const duration = end - start;

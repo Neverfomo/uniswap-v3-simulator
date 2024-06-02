@@ -20,22 +20,26 @@ function sqrtPriceX96ToPrice(sqrtPriceX96: BigNumber): string {
 }
 
 async function play() {
-  let dataManager = await SQLiteSimulationDataManager.buildInstance('WETH-USDC-RPC_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640.db')
+  let dataManager = await SQLiteSimulationDataManager.buildInstance('./data')
   let client = new SimulatorClient(dataManager)
 
-  let blockNumber = 18000000
+  let blockNumber = 14000000
   console.log(`Block number: ${blockNumber}`)
   let poolInfo = await getPoolInfo(blockNumber, USDC_TOKEN, WETH_TOKEN)
   console.log(`Onchain sqrtPriceX96 ${poolInfo.sqrtPriceX96.toString()}`)
   const price = sqrtPriceX96ToPrice(poolInfo.sqrtPriceX96)
   console.log(`Onchain price ${price}`)
 
+  console.time(`Replay events and recover pool state to block ${blockNumber}`)
   let configPool = await client.recoverFromMainnetEventDBFile('WETH-USDC-RPC_0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640.db', blockNumber)
+  console.timeEnd(`Replay events and recover pool state to block ${blockNumber}`)
   let pool = configPool.getCorePool()
   console.log(`Offchain sqrtPriceX96 ${pool.sqrtPriceX96}`)
   const offchainPrice = sqrtPriceX96ToPrice(BigNumber.from(pool.sqrtPriceX96.toString()))
   console.log(`Offchain price ${offchainPrice}`)
 
+  configPool.takeSnapshot(`${blockNumber}`)
+  
 }
 
 play().then()
