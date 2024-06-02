@@ -11,7 +11,8 @@ export interface SwapEventData {
   block_number: number,
   transaction_index: number,
   log_index: number,
-  date: Date
+  date: Date,
+  timestamp: number
 }
 
 export interface LiquidityEventData {
@@ -26,5 +27,6 @@ export interface LiquidityEventData {
   block_number: number,
   transaction_index: number,
   log_index: number,
-  date: Date
+  date: Date,
+  timestamp: number
 }

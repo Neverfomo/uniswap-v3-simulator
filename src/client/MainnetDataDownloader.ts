@@ -56,7 +56,7 @@ export class MainnetDataDownloader {
     let privateRPCProviderUrl = tunerConfig.PrivateRPCProviderUrl;
     this.RPCProvider = new providers.JsonRpcProvider(RPCProviderUrl);
     let providerType = tunerConfig.providerToBeUsed;
-    console.log(`Using ${providerType} provider to fetch events.`)
+    // console.log(`Using ${providerType} provider to fetch events.`)
     if (providerType == 'privateRpc') {
       this.privateRPCProvider = new providers.JsonRpcProvider(privateRPCProviderUrl);
       this.providerForFetchingEvents = this.privateRPCProvider;
@@ -792,10 +792,8 @@ export class MainnetDataDownloader {
     let uniswapV3Pool = await this.getCorePoolContarctByProvider(poolAddress, this.providerForFetchingEvents);
     if (eventType === EventType.MINT) {
       let topic = uniswapV3Pool.filters.Mint();
-      console.log(`fetching MINT from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
-        console.log(JSON.stringify(event))
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         let data: LiquidityEventData = {
@@ -810,19 +808,18 @@ export class MainnetDataDownloader {
           block_number: event.blockNumber,
           transaction_index: event.transactionIndex,
           log_index: event.logIndex,
-          date: date
+          date: date,
+          timestamp: block.timestamp
         }
         eventsData.push(data)
       }
     } else if (eventType === EventType.BURN) {
       let topic = uniswapV3Pool.filters.Burn();
-      console.log(`fetching BURN from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
-        console.log(JSON.stringify(event))
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
-        let data = {
+        let data: LiquidityEventData = {
           type: eventType,
           msg_sender: event.args.owner,
           recipient: "",
@@ -834,17 +831,15 @@ export class MainnetDataDownloader {
           block_number: event.blockNumber,
           transaction_index: event.transactionIndex,
           log_index: event.logIndex,
-          date: date
+          date: date,
+          timestamp: block.timestamp
         }
         eventsData.push(data)
       }
     } else if (eventType === EventType.SWAP) {
-      console.log("SWAP")
       let topic = uniswapV3Pool.filters.Swap();
-      console.log(`fetching SWAP from ${fromBlock} to ${toBlock}`)
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
-        console.log(JSON.stringify(event))
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         let data: SwapEventData = {
@@ -858,7 +853,8 @@ export class MainnetDataDownloader {
           block_number: event.blockNumber,
           transaction_index: event.transactionIndex,
           log_index: event.logIndex,
-          date: date
+          date: date,
+          timestamp: block.timestamp
         }
         eventsData.push(data)
       }

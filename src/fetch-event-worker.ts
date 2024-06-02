@@ -5,7 +5,6 @@ import { MainnetDataDownloader } from "./client";
 import { EventType } from "./enum";
 import now from 'performance-now';
 
-
 const downloader = new MainnetDataDownloader(undefined, workerData.eventDataSourceType);
 
 const label = `Fetch events from ${workerData.fromBlock} to ${workerData.toBlock}`;
@@ -19,7 +18,7 @@ function formatDuration(duration: number): string {
   const formattedSeconds = seconds.toString().padStart(2, '0');
   const formattedMinutes = minutes.toString().padStart(2, '0');
 
-  return `${formattedMinutes}:${formattedSeconds}:${formattedMilliseconds}`;
+  return `${formattedMinutes}m:${formattedSeconds}s:${formattedMilliseconds}ms`;
 }
 
 (async () => {
@@ -36,27 +35,35 @@ function formatDuration(duration: number): string {
         workerData.toBlock
       );
 
-      allEvents.push(eventsData)
-    }
+      allEvents.push(...eventsData); // Spread operator to merge arrays
+      let eventTypeStr = ""
+      if (eventType == 1) {
+        eventTypeStr = "MINT"
+      } else if (eventType == 2) {
+        eventTypeStr = "BURN"
+      } else {
+        eventTypeStr = "SWAP"
+      }
 
-    const filePath = `./events/events_${workerData.fromBlock}_${workerData.toBlock}.json`;
-    fs.writeFileSync(filePath, JSON.stringify(allEvents, null, 2));
+      // Save each event type to a separate file
+      const filePath = `./events/${eventTypeStr}/events_${workerData.fromBlock}_${workerData.toBlock}_${eventTypeStr}.json`;
+      fs.appendFileSync(filePath, JSON.stringify(eventsData, null, 2));
+    }
 
     const logData = {
       fromBlock: workerData.fromBlock,
       toBlock: workerData.toBlock,
       eventCount: allEvents.length,
-      filePath,
     };
 
     const logFilePath = `./logs/events/worker_${workerData.workerIndex}.log`;
-    fs.writeFileSync(logFilePath, JSON.stringify(logData, null, 2));
+    fs.appendFileSync(logFilePath, JSON.stringify(logData, null, 2) + '\n');
 
-    parentPort?.postMessage({ status: 'success', logFilePath });
     const end = now();
     const duration = end - start;
     const formattedDuration = formatDuration(duration);
-    fs.writeFileSync(logFilePath, `${label}: ${formattedDuration}`)
+
+    parentPort?.postMessage({ status: 'success', logFilePath, duration, formattedDuration });
   } catch (error) {
     // @ts-ignore
     parentPort?.postMessage({ status: 'error', error: error.message, fromBlock: workerData.fromBlock, toBlock: workerData.toBlock });

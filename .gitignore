@@ -152,5 +152,7 @@ typechain/
 **.db.bak
 **.bak
 **.db-journal
+**.db.*
 
 .idea
+events
