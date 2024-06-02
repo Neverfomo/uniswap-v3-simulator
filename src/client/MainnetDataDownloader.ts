@@ -794,7 +794,7 @@ export class MainnetDataDownloader {
       let topic = uniswapV3Pool.filters.Mint();
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
-        let block = await this.RPCProvider.getBlock(event.blockNumber);
+        let block = await this.privateRPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         let data: LiquidityEventData = {
           type: eventType,
@@ -817,7 +817,7 @@ export class MainnetDataDownloader {
       let topic = uniswapV3Pool.filters.Burn();
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
-        let block = await this.RPCProvider.getBlock(event.blockNumber);
+        let block = await this.privateRPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         let data: LiquidityEventData = {
           type: eventType,
@@ -840,7 +840,7 @@ export class MainnetDataDownloader {
       let topic = uniswapV3Pool.filters.Swap();
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
-        let block = await this.RPCProvider.getBlock(event.blockNumber);
+        let block = await this.privateRPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         let data: SwapEventData = {
           msg_sender: event.args.sender,
