@@ -30,8 +30,8 @@ import { loadConfig } from "../config/TunerConfig";
 import { request, gql } from "graphql-request";
 import { convertTokenStrFromDecimal } from "../util/BNUtils";
 import { LiquidityEventData, SwapEventData } from "../entity/EventData";
-import fs from 'fs';
-
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class MainnetDataDownloader {
   // @ts-ignore
@@ -228,7 +228,7 @@ export class MainnetDataDownloader {
   async update(
     mainnetEventDBFilePath: string,
     toBlock: EndBlockTypeWhenRecover,
-    batchSize: number = 5000
+    batchSize: number = 1000
   ) {
     // check dbfile first
     let { poolAddress } = this.parseFromMainnetEventDBFilePath(
@@ -243,9 +243,11 @@ export class MainnetDataDownloader {
     let eventDB = await EventDBManager.buildInstance(mainnetEventDBFilePath);
     try {
       let latestEventBlockNumber = await eventDB.getLatestEventBlockNumber();
+      console.log(latestEventBlockNumber)
       let deploymentBlockNumber = await this.queryDeploymentBlockNumber(
         poolAddress
       );
+      console.log(deploymentBlockNumber)
       let toBlockAsNumber = await this.parseEndBlockTypeWhenRecover(
         latestEventBlockNumber,
         toBlock,
@@ -334,7 +336,7 @@ export class MainnetDataDownloader {
         );
       }
 
-      await this.preProcessSwapEvent(eventDB);
+      // await this.preProcessSwapEvent(eventDB);
     } finally {
       await eventDB.close();
     }
@@ -369,6 +371,7 @@ export class MainnetDataDownloader {
     // replay events to find swap input param we need
     let startBlock = initializationEventBlockNumber;
     let currBlock = startBlock;
+    let lastSnapshotBlockNumber = initializationEventBlockNumber
 
     while (currBlock <= endBlock) {
       let nextEndBlock =
@@ -386,9 +389,18 @@ export class MainnetDataDownloader {
         await this.replayEventsAndAssertReturnValues(
           eventDB,
           configurableCorePool,
-          events
+          events,
+          currBlock
         );
       }
+      
+      // let diff = currBlock - lastSnapshotBlockNumber
+      // if (diff > 1000000) {
+      //   configurableCorePool.takeSnapshot("")
+      //   lastSnapshotBlockNumber = currBlock
+      //   console.log(`Took snapshot at ${currBlock}`)
+      // }
+      events = []
       console.timeEnd(`Replay events from ${currBlock} to ${nextEndBlock}`)
       currBlock = nextEndBlock + 1;
     }
@@ -862,7 +874,7 @@ export class MainnetDataDownloader {
   private async preProcessSwapEvent(eventDB: EventDBManager) {
     // initialize configurableCorePool
     let simulatorDBManager: SimulationDataManager =
-      await SQLiteSimulationDataManager.buildInstance();
+      await SQLiteSimulationDataManager.buildInstance(`simulation-data-manager-${await (eventDB.getLatestEventBlockNumber())}`);
     let poolConfig = await eventDB.getPoolConfig();
     let configurableCorePool: ConfigurableCorePool =
       new ConfigurableCorePoolImpl(
@@ -876,6 +888,8 @@ export class MainnetDataDownloader {
       configurableCorePool,
       await eventDB.getLatestEventBlockNumber()
     );
+    configurableCorePool.takeSnapshot(`${await eventDB.getLatestEventBlockNumber()}`)
+    configurableCorePool.persistSnapshot()
     await simulatorDBManager.close();
     console.log("Events have been pre-processed successfully.");
   }
@@ -910,16 +924,19 @@ export class MainnetDataDownloader {
         startBlock,
         endBlock
       );
+    // console.log(`${startBlock}-${endBlock} MINT events num ${mintEvents.length}`)
     let burnEvents: LiquidityEvent[] =
       await eventDB.getLiquidityEventsByBlockNumber(
         EventType.BURN,
         startBlock,
         endBlock
       );
+    // console.log(`${startBlock}-${endBlock} BURN events num ${mintEvents.length}`)
     let swapEvents: SwapEvent[] = await eventDB.getSwapEventsByBlockNumber(
       startBlock,
       endBlock
     );
+    // console.log(`${startBlock}-${endBlock} SWAP events num ${mintEvents.length}`)
     events.push(...mintEvents);
     events.push(...burnEvents);
     events.push(...swapEvents);
@@ -934,12 +951,14 @@ export class MainnetDataDownloader {
   private async replayEventsAndAssertReturnValues(
     eventDB: EventDBManager,
     configurableCorePool: ConfigurableCorePool,
-    paramArr: (LiquidityEvent | SwapEvent)[]
+    paramArr: (LiquidityEvent | SwapEvent)[],
+    fromBlockNumber: number
   ): Promise<void> {
     for (let index = 0; index < paramArr.length; index++) {
       // avoid stack overflow
-      if (index % 4000 == 0) {
+      if (fromBlockNumber >= 18580000 && index % 4000 == 0) {
         configurableCorePool.takeSnapshot("");
+        // configurableCorePool.clearPoolStates()
       }
 
       let param = paramArr[index];
@@ -1015,14 +1034,31 @@ export class MainnetDataDownloader {
     }
   }
 
-  async importEventsFromFiles(eventFiles: string[], dbFilePath: string, poolAddress: string) {
+  getCurrentFormattedDateTime(): string {
+    const now = new Date();
+  
+    const pad = (num: number) => num.toString().padStart(2, '0');
+    
+    const month = pad(now.getMonth() + 1); // 月份从0开始，所以要加1
+    const day = pad(now.getDate());
+    const hours = pad(now.getHours());
+    const minutes = pad(now.getMinutes());
+    const seconds = pad(now.getSeconds());
+  
+    return `${month}${day}${hours}${minutes}${seconds}`;
+  }
+
+  async importEventsFromFiles(eventsDir: string, token0Name: string, token1Name: string, poolAddress: string) {
+    let uniswapV3Pool = await this.getCorePoolContarct(poolAddress);
+    let dbFilePath = `./eventdb/${token0Name}-${token1Name}-${await (uniswapV3Pool.fee())}-${this.getCurrentFormattedDateTime()}_${poolAddress}.db`
     if (fs.existsSync(dbFilePath)) {
       throw new Error(`The database file: ${dbFilePath} already exists. Please choose a different file path or delete the existing file.`);
     }
+    console.time('Import events from events file')
+    let eventFiles: string[] = this.readJsonFilesRecursively(eventsDir)
 
     const eventDB = await EventDBManager.buildInstance(dbFilePath);
     let latestEventBlockNumber = 0
-    let uniswapV3Pool = await this.getCorePoolContarct(poolAddress);
     let initializeTopic = uniswapV3Pool.filters.Initialize();
     let initializationEvent = await uniswapV3Pool.queryFilter(initializeTopic);
     let initializationSqrtPriceX96 = initializationEvent[0].args.sqrtPriceX96;
@@ -1044,14 +1080,14 @@ export class MainnetDataDownloader {
         initializationEventBlockNumber
       );
       for (const file of eventFiles) {
+        console.time(`Process file ${file}`)
         const rawData = fs.readFileSync(file, 'utf-8');
         const events = JSON.parse(rawData);
-
         for (const event of events) {
           latestEventBlockNumber = event.block_number > latestEventBlockNumber ? event.block_number : latestEventBlockNumber
-          if (event.eventType === 'MINT' || event.eventType === 'BURN') {
+          if (event.type === 1 || event.type === 2) {
             await eventDB.insertLiquidityEvent(
-              event.eventType,
+              event.type,
               event.msg_sender,
               event.recipient,
               event.liquidity,
@@ -1064,7 +1100,7 @@ export class MainnetDataDownloader {
               event.log_index,
               new Date(event.date)
             );
-          } else if (event.eventType === 'SWAP') {
+          } else {
             await eventDB.insertSwapEvent(
               event.msg_sender,
               event.recipient,
@@ -1080,12 +1116,42 @@ export class MainnetDataDownloader {
             );
           }
         }
+        console.timeEnd(`Process file ${file}`)
       }
       await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber)
       await this.preProcessSwapEvent(eventDB);
       console.log("Events have been imported successfully.");
+      console.timeEnd('Import events from events file')
     } finally {
       await eventDB.close();
     }
   }
+
+  readJsonFilesRecursively(directoryPath: string, fileList: string[] = []): string[] {
+      // 读取目录内容
+      const filesAndDirectories = fs.readdirSync(directoryPath);
+    
+      filesAndDirectories.forEach(item => {
+          const fullPath = path.join(directoryPath, item);
+          const stat = fs.statSync(fullPath);
+
+          if (stat.isDirectory()) {
+              // 如果是目录，则递归读取
+              this.readJsonFilesRecursively(fullPath, fileList);
+          } else if (stat.isFile() && path.extname(fullPath) === '.json') {
+              // 如果是.json文件，则将文件路径添加到列表中
+              fileList.push(fullPath);
+          }
+      });
+
+      return fileList;
+  }
+
+  async getLatestBlockNumberInDb(mainnetEventDBFilePath: string): Promise<number> {
+    let eventDB = await EventDBManager.buildInstance(mainnetEventDBFilePath);
+    let latestBlockNumberInDb = eventDB.getLatestEventBlockNumber()
+    return latestBlockNumberInDb;
+  }
+
+
 }

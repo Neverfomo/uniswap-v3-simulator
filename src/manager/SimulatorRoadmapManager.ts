@@ -93,4 +93,8 @@ export class SimulatorRoadmapManager
         return Promise.resolve();
       });
   }
+
+  clearPoolStates() {
+    this.poolStates = new Map();
+  }
 }

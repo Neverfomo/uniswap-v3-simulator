@@ -84,4 +84,6 @@ export interface ConfigurableCorePool {
   stepBack(): void;
 
   recover(poolStateId: string): void;
+
+  clearPoolStates(): void;
 }

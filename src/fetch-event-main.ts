@@ -10,15 +10,25 @@ const endBlock = 19980326; // Replace with actual end block
 const batchSize = 1000; // Replace with the desired batch size
 const numWorkers = 10;
 
+const token0 = 'WETH'
+const token1 = 'USDC'
+const fee = '500'
+
 if (!fs.existsSync('./logs/events')) {
   fs.mkdirSync('./logs/events', { recursive: true });
 }
 
 if (!fs.existsSync('./events')) {
   fs.mkdirSync('./events');
-  fs.mkdirSync('./events/SWAP');
-  fs.mkdirSync('./events/BURN');
-  fs.mkdirSync('./events/MINT');
+}
+
+const dirPath = `${token0}_${token1}_${fee}`
+
+if (!fs.existsSync(dirPath)) {
+  fs.mkdirSync(`./events/${dirPath}`);
+  fs.mkdirSync(`./events/${dirPath}/SWAP`);
+  fs.mkdirSync(`./events/${dirPath}/BURN`);
+  fs.mkdirSync(`./events/${dirPath}/MINT`);
 }
 
 const formatDuration = (duration: number): string => {

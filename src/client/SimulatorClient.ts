@@ -77,7 +77,18 @@ export class SimulatorClient {
   ): Promise<IConfigurableCorePool> {
     let mainnetDataDownloader: MainnetDataDownloader =
       new MainnetDataDownloader(RPCProviderUrl, eventDataSourceType);
-    await mainnetDataDownloader.update(mainnetEventDBFilePath, endBlock);
+      if (typeof endBlock === 'number') {
+        while ((await mainnetDataDownloader.getLatestBlockNumberInDb(mainnetEventDBFilePath)) < endBlock) {
+          try {
+            await mainnetDataDownloader.update(mainnetEventDBFilePath, endBlock);
+          } catch (error) {
+            console.log(error)
+          }
+        }
+      } else {
+        await mainnetDataDownloader.update(mainnetEventDBFilePath, endBlock)
+      }
+
     let { poolAddress } = mainnetDataDownloader.parseFromMainnetEventDBFilePath(
       mainnetEventDBFilePath
     );

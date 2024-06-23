@@ -556,4 +556,8 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
       : this.postProcessorCallback;
     return postProcessor(this, transition);
   }
+
+  clearPoolStates() {
+    this.simulatorRoadmapManager.clearPoolStates()
+  }
 }

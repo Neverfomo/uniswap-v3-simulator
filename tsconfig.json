@@ -13,7 +13,10 @@
     "outDir": "./dist",
     "resolveJsonModule": true,
     "allowJs": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "pretty": true,
+    "noEmitOnError": true
   },
   "exclude": ["dist", "node_modules"],
   "include": ["./src"]
